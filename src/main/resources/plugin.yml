@@ -1,0 +1,14 @@
+name: EcoGate
+main: jp.minecraftuser.ecogate.EcoGate
+version: 0.1
+depend: [EcoFramework]
+commands:
+  gate:
+    description: gate command.
+    usage: /<command> xxx
+  world:
+    description: world command.
+    usage: /<command> xxx
+  ecogate:
+    description: ecogate command.
+    usage: /<command> xxx
