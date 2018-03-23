@@ -15,25 +15,30 @@
             <id>spigot-repo</id>
             <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
         </repository>
+        <repository>
+            <id>eco-plugin</id>
+            <url>http://ecolight15.github.io/mvn_rep/</url>
+        </repository>
     </repositories>
     <dependencies>
-        <dependency>
-            <groupId>jp.minecraftuser</groupId>
-            <artifactId>EcoFramework</artifactId>
-            <version>0.1</version>
-            <scope>compile</scope>
-        </dependency>
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
             <version>1.10.2-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>jp.minecraftuser</groupId>
+            <artifactId>EcoFramework</artifactId>
+            <version>0.2</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
     <build>
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
+                <filtering>true</filtering>
                 <includes>
                     <include>plugin.yml</include>
                     <include>config.yml</include>
@@ -43,4 +48,11 @@
             </resource>
         </resources>
     </build>
+    <distributionManagement>
+        <repository>
+            <id>eco-rep</id>
+            <name>eco-rep</name>
+            <url>file://${project.build.directory}/deproy</url>
+        </repository>
+    </distributionManagement>
 </project>
