@@ -110,8 +110,7 @@ public class PlayerListener extends ListenerFrame {
         if (event.getEntity() == null) return;
         if (event.getEntityType() != EntityType.ENDER_DRAGON) return;
         for (Block b : event.blockList()) {
-            if ((b.getType() != Material.STATIONARY_WATER) &&
-                (b.getType() != Material.WATER))continue;
+            if (b.getType() != Material.WATER)continue;
             if (gates.contains(b.getLocation())) { new BlockSetTimer(plg, b.getLocation(), b.getType(), "").runTaskLater(plg, 1); continue; }
             if (gates.contains(b.getLocation(), 0, 1, 0)) { new BlockSetTimer(plg, b.getLocation(), b.getType(), "").runTaskLater(plg, 1); continue; }
         }
@@ -121,8 +120,7 @@ public class PlayerListener extends ListenerFrame {
     public void BlockFromTo(BlockFromToEvent event) {
         //plg.getServer().broadcastMessage("BlockFromTo");
         Block b = event.getBlock();
-        if ((b.getType() != Material.STATIONARY_WATER) &&
-            (b.getType() != Material.WATER))return;
+        if (b.getType() != Material.WATER)return;
         if (gates.contains(b.getLocation())) { event.setCancelled(true); return; }
         if (gates.contains(b.getLocation(), 0, 1, 0)) { event.setCancelled(true); return; }
         if (gates.contains(b.getLocation(), 0, 2, 0)) { event.setCancelled(true); return; }
