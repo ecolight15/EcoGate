@@ -5,10 +5,69 @@ depend: [EcoFramework]
 commands:
   gate:
     description: gate command.
-    usage: /<command> xxx
+    usage: /<command> function...
+    permission: ecogate.gate
+  gate add:
+    description: gate additional command.
+    usage: /<command> gate1
+    permission: ecogate.gate.add
+  gate del:
+    description: gate deletional command.
+    usage: /<command> gate1
+    permission: ecogate.gate.del
+  gate link:
+    description: gate link command.
+    usage: /<command> gate1 gate2
+    permission: ecogate.gate.link
+  gate unlink:
+    description: gate unlink command.
+    usage: /<command> gate1
+    permission: ecogate.gate.unlink
   world:
     description: world command.
-    usage: /<command> xxx
+    usage: /<command> function...
+    permission: ecogate.world
+  world add:
+    description: world additional command.
+    usage: /<command> type... worldname...
+    permission: ecogate.world.add
+  world del:
+    description: world deletional command.
+    usage: /<command> worldname
+    permission: ecogate.world.del
+  world list:
+    description: world list command.
+    usage: /<command>
+    permission: ecogate.world.list
+  world add amplified:
+    description: amplified world additional command.
+    usage: /<command> worldname
+    permission: ecogate.world.add.amplified
+  world add flat:
+    description: flat world additional command.
+    usage: /<command> worldname
+    permission: ecogate.world.add.flat
+  world add large:
+    description: large biome world additional command.
+    usage: /<command> worldname
+    permission: ecogate.world.add.large
+  world add nether:
+    description: nether world additional command.
+    usage: /<command> worldname
+    permission: ecogate.world.add.nether
+  world add normal:
+    description: normal world additional command.
+    usage: /<command> worldname
+    permission: ecogate.world.add.normal
+  world add end:
+    description: end world additional command.
+    usage: /<command> worldname
+    permission: ecogate.world.add.end
   ecogate:
     description: ecogate command.
-    usage: /<command> xxx
+    usage: /<command> function...
+    permission: ecogate
+  ecogate reload:
+    description: Reload ecogate configuration file command.
+    usage: /<command>
+    permission: ecogate.reload
