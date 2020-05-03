@@ -102,7 +102,7 @@ public class PlayerListener extends ListenerFrame {
     public void ChunkUnload(ChunkUnloadEvent event) {
         Chunk c = event.getChunk();
         if (gates.contains(c)) {
-            event.setCancelled(true);
+            //event.setCancelled(true);
         }
     }
     @EventHandler(priority=EventPriority.LOWEST)
