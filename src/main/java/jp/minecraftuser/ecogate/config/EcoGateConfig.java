@@ -30,7 +30,7 @@ public class EcoGateConfig extends ConfigFrame{
         // ワールド、ゲート定義再読み込み
         worlds = new LoaderWorld(plg);
         gates = new LoaderGate(plg);
-        ListenerFrame pl = plg.getPluginListerner("player");
+        ListenerFrame pl = plg.getPluginListener("player");
         if (pl != null) {
             ((PlayerListener)pl).reloadConf();
         }
