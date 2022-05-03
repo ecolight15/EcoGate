@@ -1,6 +1,7 @@
 name: EcoGate
 main: jp.minecraftuser.ecogate.EcoGate
 version: ${project.version}
+api-version: 1.18
 depend: [EcoFramework]
 commands:
   gate:
