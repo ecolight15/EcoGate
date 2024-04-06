@@ -22,6 +22,8 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.event.world.ChunkUnloadEvent;
 
 /**
@@ -98,6 +100,7 @@ public class PlayerListener extends ListenerFrame {
         }
         usedmap.put(p, loc);
     }
+
     @EventHandler(priority=EventPriority.LOWEST)
     public void ChunkUnload(ChunkUnloadEvent event) {
         Chunk c = event.getChunk();
@@ -105,6 +108,7 @@ public class PlayerListener extends ListenerFrame {
             //event.setCancelled(true);
         }
     }
+
     @EventHandler(priority=EventPriority.LOWEST)
     public void EntityExplode(EntityExplodeEvent event) {
         if (event.getEntity() == null) return;
@@ -124,5 +128,33 @@ public class PlayerListener extends ListenerFrame {
         if (gates.contains(b.getLocation())) { event.setCancelled(true); return; }
         if (gates.contains(b.getLocation(), 0, 1, 0)) { event.setCancelled(true); return; }
         if (gates.contains(b.getLocation(), 0, 2, 0)) { event.setCancelled(true); return; }
+    }
+
+    /**
+     * プレイヤーテレポートイベント処理
+     * @param event イベント情報
+     */
+    @EventHandler(priority=EventPriority.LOWEST)
+    public void PlayerTeleport(PlayerTeleportEvent event) {
+        if (event.getCause() != TeleportCause .END_GATEWAY) return;
+        Location loc = event.getPlayer().getLocation();
+        if (gates.contains(loc, 0, 0, 0)) { event.setCancelled(true); return; }
+        if (gates.contains(loc, 0, 1, 0)) { event.setCancelled(true); return; }
+        if (gates.contains(loc, 1, 0, 0)) { event.setCancelled(true); return; }
+        if (gates.contains(loc, 1, 1, 0)) { event.setCancelled(true); return; }
+        if (gates.contains(loc, -1, 0, 0)) { event.setCancelled(true); return; }
+        if (gates.contains(loc, -1, 1, 0)) { event.setCancelled(true); return; }
+        if (gates.contains(loc, 0, 0, 1)) { event.setCancelled(true); return; }
+        if (gates.contains(loc, 0, 1, 1)) { event.setCancelled(true); return; }
+        if (gates.contains(loc, 0, 0, -1)) { event.setCancelled(true); return; }
+        if (gates.contains(loc, 0, 1, -1)) { event.setCancelled(true); return; }
+        if (gates.contains(loc, 1, 0, 1)) { event.setCancelled(true); return; }
+        if (gates.contains(loc, 1, 1, 1)) { event.setCancelled(true); return; }
+        if (gates.contains(loc, 1, 0, -1)) { event.setCancelled(true); return; }
+        if (gates.contains(loc, 1, 1, -1)) { event.setCancelled(true); return; }
+        if (gates.contains(loc, -1, 0, 1)) { event.setCancelled(true); return; }
+        if (gates.contains(loc, -1, 1, 1)) { event.setCancelled(true); return; }
+        if (gates.contains(loc, -1, 0, -1)) { event.setCancelled(true); return; }
+        if (gates.contains(loc, -1, 1, -1)) { event.setCancelled(true); return; }
     }
 }
