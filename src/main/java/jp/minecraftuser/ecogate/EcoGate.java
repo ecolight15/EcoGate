@@ -66,7 +66,7 @@ public class EcoGate extends PluginFrame {
         cmd.addCommand(new GateDelCommand(this, "del"));
         cmd.addCommand(new GateLinkCommand(this, "link"));
         cmd.addCommand(new GateUnlinkCommand(this, "unlink"));
-        cmd.addCommand(new GateNearSearchCommand(this, "near_search"));
+        cmd.addCommand(new GateNearSearchCommand(this, "near"));
         registerPluginCommand(cmd);
         
         // ワールド制御系コマンド
