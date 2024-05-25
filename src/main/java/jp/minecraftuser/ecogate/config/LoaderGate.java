@@ -275,7 +275,82 @@ public class LoaderGate extends LoaderYaml {
         
         return null;
     }
-    
+
+    /**
+     * 付近のゲートを取得する
+     *
+     * @param loc        ロケーション
+     * @param link_check 接続先が存在するゲートのみを取得するか
+     * @return 付近のゲート及び接続されたゲート
+     */
+    public String nearGateSearch(Location loc, boolean link_check) {
+        String nearGateName = "null";
+        double nearDistance = 999999999;
+        boolean found = false;
+        for (Map.Entry<String, Location> e : locmap.entrySet()) {
+            String gate_name = e.getKey();
+            Location get_loc = e.getValue();
+            if (!loc.getWorld().getName().equals(get_loc.getWorld().getName())) continue;
+            if (loc.distance(get_loc) < nearDistance) {
+                String name = gatemap.get(gate_name);
+                // 相手のゲートの座標データがあるか確認する
+                if (link_check) {
+                    if (!locmap.containsKey(name)) {
+                        continue;
+                    }
+                }
+                found = true;
+                nearDistance = loc.distance(get_loc);
+                nearGateName = gate_name;
+            }
+        }
+        if (found) {
+            return nearGateName;
+        }
+        return "null";
+    }
+
+    /**
+     * 該当ゲートの接続先ゲート名を取得する
+     *
+     * @param gate_name ゲート名
+     * @return 接続先ゲート名
+     */
+    public String getLinkGateName(String gate_name) {
+        String link_gate_name = "null";
+        if (locmap.containsKey(gate_name)) {
+            link_gate_name = gatemap.get(gate_name);
+            if (locmap.containsKey(link_gate_name)) {
+                return link_gate_name;
+            }
+        }
+        return "null";
+    }
+
+    /**
+     * 該当ゲートのtextを取得する
+     *
+     * @param gate_name ゲート名
+     * @return ゲートテキスト
+     */
+    public String getGateText(String gate_name) {
+        if (textlist.containsKey(gate_name)) {
+            return textlist.get(gate_name);
+        }
+        return "null";
+    }
+    /**
+     * 該当ゲートのLocationを取得する
+     * @param gate_name ゲート名
+     * @return ゲートテキスト
+     */
+    public Location getGateLocation(String gate_name) {
+        if (locmap.containsKey(gate_name)) {
+            return locmap.get(gate_name);
+        }
+        return null;
+    }
+
     /**
      * ゲート追加処理
      * @param name ゲート名

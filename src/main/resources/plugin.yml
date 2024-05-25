@@ -24,6 +24,10 @@ commands:
     description: gate unlink command.
     usage: /<command> gate1
     permission: ecogate.gate.unlink
+  gate near_search:
+    description: gate near_search command.
+    usage: /<command>
+    permission: ecogate.gate.near_search
   world:
     description: world command.
     usage: /<command> function...

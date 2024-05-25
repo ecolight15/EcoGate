@@ -6,6 +6,7 @@ import jp.minecraftuser.ecogate.command.EcogateCommand;
 import jp.minecraftuser.ecogate.command.EcogateReloadCommand;
 import jp.minecraftuser.ecogate.command.GateAddCommand;
 import jp.minecraftuser.ecogate.command.GateCommand;
+import jp.minecraftuser.ecogate.command.GateNearSearchCommand;
 import jp.minecraftuser.ecogate.command.GateDelCommand;
 import jp.minecraftuser.ecogate.command.GateLinkCommand;
 import jp.minecraftuser.ecogate.command.GateUnlinkCommand;
@@ -65,6 +66,7 @@ public class EcoGate extends PluginFrame {
         cmd.addCommand(new GateDelCommand(this, "del"));
         cmd.addCommand(new GateLinkCommand(this, "link"));
         cmd.addCommand(new GateUnlinkCommand(this, "unlink"));
+        cmd.addCommand(new GateNearSearchCommand(this, "near_search"));
         registerPluginCommand(cmd);
         
         // ワールド制御系コマンド
