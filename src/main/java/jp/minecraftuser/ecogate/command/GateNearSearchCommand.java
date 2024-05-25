@@ -38,7 +38,7 @@ public class GateNearSearchCommand extends CommandFrame {
      */
     @Override
     public String getPermissionString() {
-        return "ecogate";
+        return "ecogate.gate.near_search";
     }
 
     /**
