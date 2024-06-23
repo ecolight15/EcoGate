@@ -6,7 +6,11 @@ import jp.minecraftuser.ecoframework.PluginFrame;
 import jp.minecraftuser.ecoframework.Utl;
 import jp.minecraftuser.ecogate.config.EcoGateConfig;
 import jp.minecraftuser.ecogate.config.LoaderGate;
+import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * ゲート接続解除コマンドクラス
@@ -49,12 +53,39 @@ public class GateUnlinkCommand extends CommandFrame {
 
         // 指定ゲートとその対になるゲートのリンク定義をそれぞれ削除する
         LoaderGate gates = ecgConf.getGates();
-        if (!gates.contains(args[0]) ) { Utl.sendPluginMessage(plg, sender, "指定されたゲート[{0}]は存在しません", args[0]); return true; }
-        if (!gates.isLinked(args[0])) { Utl.sendPluginMessage(plg, sender, "指定されたゲート[{0}]の接続が見つかりません", args[0]); return true; }
-        String gate2 = gates.linkDelGate(args[0]);
-        if (gate2 == null) { Utl.sendPluginMessage(plg, sender, "ゲート定義異常のため可能な限り[{0}]の設定を解除しました", args[0]); return true; }
-        Utl.sendPluginMessage(plg, sender, "指定されたゲート[{0}]と[{1}]の接続を解除しました", args[0], gate2);
+        try {
+            String gate = gates.linkDelGate(args[0]);
+            Utl.sendPluginMessage(plg, sender, "指定されたゲート[{0}]と[{1}]の接続を解除しました", args[0], gate);
+        } catch (Exception e) {
+            Utl.sendPluginMessage(plg, sender, e.getLocalizedMessage());
+            Utl.sendPluginMessage(plg, sender, "指定されたゲート[{0}]の接続解除に失敗しました", args[0]);
+        }
         return true;
     }
-    
+
+    /**
+     * タブ補完用リスト取得
+     * @param sender コマンド送信者
+     * @param cmd コマンド
+     * @param string タブ補完対象文字列
+     * @param strings その他パラメタ
+     * @return 補完リスト
+     */
+    @Override
+    protected List<String> onTabComplete(CommandSender sender, Command cmd, String string, String[] strings) {
+        LoaderGate gates = ecgConf.getGates();
+        ArrayList<String> nameList = gates.getGateNameList();
+        ArrayList<String> unloadList = gates.getUnloadWorldGateNameList();
+        ArrayList<String> ret = new ArrayList<>();
+        for (String name : nameList) {
+            if (unloadList.contains(name)) {
+                // ret.add(name + " (unload)");
+            } else {
+                if (gates.isLinked(name)) {
+                    ret.add(name);
+                }
+            }
+        }
+        return ret;
+    }
 }

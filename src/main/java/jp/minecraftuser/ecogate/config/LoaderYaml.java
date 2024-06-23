@@ -26,8 +26,8 @@ public class LoaderYaml {
     
     /**
      * コンストラクタ
-     * @param plg_
-     * @param filename_ 
+     * @param plg_ プラグインインスタンス
+     * @param filename_ ファイル名
      */
     public LoaderYaml(PluginFrame plg_, String filename_) {
         plg = plg_;

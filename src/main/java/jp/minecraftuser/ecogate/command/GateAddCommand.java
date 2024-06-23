@@ -49,23 +49,23 @@ public class GateAddCommand extends CommandFrame {
         // ゲート名取得し、後続文字列はゲート説明文として抽出して登録する
         Player player = (Player) sender;
         LoaderGate gates = ecgConf.getGates();
-        boolean result;
-        if (args.length > 1) {
-            StringBuilder sb = new StringBuilder();
-            for (int i = 1; i < args.length; i++) {
-                if (i != 1) sb.append(" ");
-                sb.append(args[i]);
+        try {
+            if (args.length > 1) {
+                StringBuilder sb = new StringBuilder();
+                for (int i = 1; i < args.length; i++) {
+                    if (i != 1) sb.append(" ");
+                    sb.append(args[i]);
+                }
+                // 説明文付きゲートを登録する
+                gates.addGate(args[0], player.getLocation(), sb.toString());
+            } else {
+                // 説明文無しゲートを登録する
+                gates.addGate(args[0], player.getLocation());
             }
-            // 説明文付きゲートを登録する
-            result = gates.addGate(args[0], player.getLocation(), sb.toString());
-        } else {
-            // 説明文無しゲートを登録する
-            result = gates.addGate(args[0], player.getLocation());
-        }
-        if (!result) {
-            Utl.sendPluginMessage(plg, sender, "指定されたゲート[{0}]の登録に失敗しました", args[0]);
-        } else {
             Utl.sendPluginMessage(plg, sender, "指定されたゲート[{0}]を登録しました", args[0]);
+        } catch (Exception e) {
+            Utl.sendPluginMessage(plg, sender, e.getLocalizedMessage());
+            Utl.sendPluginMessage(plg, sender, "指定されたゲート[{0}]の登録に失敗しました", args[0]);
         }
         return true;
     }

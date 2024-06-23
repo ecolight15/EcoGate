@@ -15,7 +15,7 @@ public class EcoGateConfig extends ConfigFrame{
     private static LoaderGate gates = null;
     /**
      * コンストラクタ
-     * @param plg_ 
+     * @param plg_ プラグイン
      */
     public EcoGateConfig(PluginFrame plg_) {
         super(plg_);
@@ -29,7 +29,7 @@ public class EcoGateConfig extends ConfigFrame{
         super.reload();
         // ワールド、ゲート定義再読み込み
         worlds = new LoaderWorld(plg);
-        gates = new LoaderGate(plg);
+        gates = new LoaderGate(plg, this);
         ListenerFrame pl = plg.getPluginListener("player");
         if (pl != null) {
             ((PlayerListener)pl).reloadConf();

@@ -39,6 +39,5 @@ public class VehicleTimer  extends TimerFrame{
         if (e.getType() == EntityType.MINECART) {
             ((Minecart)e).setPassenger(p);
         }
-        
     }
 }

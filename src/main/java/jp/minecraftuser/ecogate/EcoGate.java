@@ -2,26 +2,10 @@ package jp.minecraftuser.ecogate;
 
 import jp.minecraftuser.ecoframework.PluginFrame;
 import jp.minecraftuser.ecoframework.CommandFrame;
-import jp.minecraftuser.ecogate.command.EcogateCommand;
-import jp.minecraftuser.ecogate.command.EcogateReloadCommand;
-import jp.minecraftuser.ecogate.command.GateAddCommand;
-import jp.minecraftuser.ecogate.command.GateCommand;
-import jp.minecraftuser.ecogate.command.GateNearSearchCommand;
-import jp.minecraftuser.ecogate.command.GateDelCommand;
-import jp.minecraftuser.ecogate.command.GateLinkCommand;
-import jp.minecraftuser.ecogate.command.GateUnlinkCommand;
-import jp.minecraftuser.ecogate.command.WorldAddAmplifiedCommand;
-import jp.minecraftuser.ecogate.command.WorldAddCommand;
-import jp.minecraftuser.ecogate.command.WorldAddFlatCommand;
-import jp.minecraftuser.ecogate.command.WorldAddLargeCommand;
-import jp.minecraftuser.ecogate.command.WorldAddNetherCommand;
-import jp.minecraftuser.ecogate.command.WorldAddNormalCommand;
-import jp.minecraftuser.ecogate.command.WorldAddTheEndCommand;
-import jp.minecraftuser.ecogate.command.WorldCommand;
-import jp.minecraftuser.ecogate.command.WorldDelCommand;
-import jp.minecraftuser.ecogate.command.WorldListCommand;
+import jp.minecraftuser.ecogate.command.*;
 import jp.minecraftuser.ecogate.config.EcoGateConfig;
 import jp.minecraftuser.ecogate.listener.PlayerListener;
+import jp.minecraftuser.ecogate.timer.AsyncWorker;
 
 public class EcoGate extends PluginFrame {
     
@@ -47,7 +31,9 @@ public class EcoGate extends PluginFrame {
      */
     @Override
     public void initializeConfig() {
-        registerPluginConfig(new EcoGateConfig(this));
+        EcoGateConfig conf = new EcoGateConfig(this);
+        conf.registerString("server");
+        registerPluginConfig(conf);
     }
 
     /**
@@ -57,16 +43,20 @@ public class EcoGate extends PluginFrame {
     public void initializeCommand() {
         // EcoGate本体コマンド
         CommandFrame cmd = new EcogateCommand(this, "ecogate");
+        cmd.addCommand(new EcogateTestCommand(this, "test"));
         cmd.addCommand(new EcogateReloadCommand(this, "reload"));
         registerPluginCommand(cmd);
         
         // ゲート制御系コマンド
         cmd = new GateCommand(this, "gate");
         cmd.addCommand(new GateAddCommand(this, "add"));
+        cmd.addCommand(new GateUpdateCommand(this, "update"));
         cmd.addCommand(new GateDelCommand(this, "del"));
         cmd.addCommand(new GateLinkCommand(this, "link"));
         cmd.addCommand(new GateUnlinkCommand(this, "unlink"));
         cmd.addCommand(new GateNearSearchCommand(this, "near"));
+        cmd.addCommand(new GateListCommand(this, "list"));
+        cmd.addCommand(new GateInfoCommand(this, "info"));
         registerPluginCommand(cmd);
         
         // ワールド制御系コマンド
@@ -90,5 +80,15 @@ public class EcoGate extends PluginFrame {
     @Override
     public void initializeListener() {
         registerPluginListener(new PlayerListener(this, "player"));
+    }
+
+    /**
+     * 定期実行タイマー初期化
+     */
+    @Override
+    public void initializeTimer() {
+        AsyncWorker timer = AsyncWorker.getInstance(this, "worker");
+        registerPluginTimer(timer);
+        timer.runTaskTimer(this, 0, 20);
     }
 }

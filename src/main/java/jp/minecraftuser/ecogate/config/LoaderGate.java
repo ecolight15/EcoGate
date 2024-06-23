@@ -4,11 +4,15 @@ package jp.minecraftuser.ecogate.config;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+
+import jp.minecraftuser.ecoframework.ConfigFrame;
 import jp.minecraftuser.ecoframework.PluginFrame;
-import org.bukkit.Chunk;
+import jp.minecraftuser.ecogate.exception.InvalidStateException;
+import jp.minecraftuser.ecogate.struct.Gate;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.Configuration;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
 /**
@@ -16,23 +20,74 @@ import org.bukkit.configuration.file.FileConfiguration;
  * @author ecolight
  */
 public class LoaderGate extends LoaderYaml {
-    private HashMap<String, Location> locmap; // ゲート座標リスト<ゲート名, 座標>
-    private HashMap<String, String> gatemap;  // リンク定義<ゲート名, 接続先ゲート名>
-    private HashMap<String, String> textlist = new HashMap<>(); // ゲート説明文定義 <ゲート名, 説明文>
+    private HashMap<String, HashMap<String, Gate>> worldGateMap; // ゲート座標マップ<ワールド, <ゲート名, 座標>>
+    private HashMap<String, Gate> gateDataMap; // ゲート定義リスト<ゲート名, 座標>
+    private ArrayList<String> unloadWorldGateNameList; // 未ロードワールドのゲート名リスト
+    private HashMap<String, String> worldlist;
     private PluginFrame plg = null;
-    private boolean init = true;
+    private ConfigFrame defConf;
 
     /**
      * コンストラクタ
-     * @param plg プラグインフレームインスタンス
+     * @param plg_ プラグインフレームインスタンス
      */
-    public LoaderGate(PluginFrame plg) {
-        super(plg,"Gates.yml");
-        this.plg = plg;
-        locmap = new HashMap<>();
-        gatemap = new HashMap<>();
+    public LoaderGate(PluginFrame plg_, ConfigFrame config_) {
+        super(plg_,"Gates.yml");
+        defConf = config_;
+        defConf.registerString("server");
+        this.plg = plg_;
+        gateDataMap = new HashMap<>();
+        unloadWorldGateNameList = new ArrayList<>();
+        worldGateMap = new HashMap<>();
+        for (World world : plg_.getServer().getWorlds()) {
+            worldGateMap.put(world.getName(), new HashMap<>());
+        }
         loadAllGate();
         log.info("AllGateConfigLoaded.");
+    }
+
+    /**
+     * ゲート定義リスト取得
+     * @return ゲート定義リスト
+     */
+    public ArrayList<String> getGateNameList() {
+        return new ArrayList<String>(gateDataMap.keySet());
+    }
+
+    /**
+     * ゲート定義リスト取得(ワールド名指定)
+     * @return ゲート定義リスト
+     */
+    public ArrayList<String> getGateNameList(String worldName) {
+        ArrayList<String> ret = new ArrayList<>();
+        for  (Gate gate : gateDataMap.values()) {
+            if (gate.worldName.equals(worldName)) {
+                ret.add(gate.name);
+            }
+        }
+        return ret;
+    }
+
+    /**
+     * ワールドなしでロードサれなかったゲート定義のリスト取得
+     * @return ゲート定義リスト
+     */
+    public ArrayList<String> getUnloadWorldGateNameList() {
+        return unloadWorldGateNameList;
+    }
+
+    /**
+     * ワールドリスト取得
+     * @return ワールドリスト
+     */
+    public ArrayList<String> getWorldList() {
+        ArrayList<String> ret = new ArrayList<>();
+        for (String worldName : worldlist.values()) {
+            if (!ret.contains(worldName)) {
+                ret.add(worldName);
+            }
+        }
+        return ret;
     }
 
     /**
@@ -50,15 +105,17 @@ public class LoaderGate extends LoaderYaml {
         Map<String, Object> root = conf.getValues(true);
 
         ArrayList<String> namelist = new ArrayList<>();
-        HashMap<String, String> worldlist = new HashMap<>();
+        HashMap<String, String> serverlist = new HashMap<>();
+        worldlist = new HashMap<>();
         HashMap<String, String> xlist = new HashMap<>();
         HashMap<String, String> ylist = new HashMap<>();
         HashMap<String, String> zlist = new HashMap<>();
         HashMap<String, String> yawlist = new HashMap<>();
         HashMap<String, String> pitchlist = new HashMap<>();
+        HashMap<String, String> textlist = new HashMap<>();
 
-        ArrayList<String> linknamelist = new ArrayList<>();
-        HashMap<String, String> linknamelistb = new HashMap<>();
+        ArrayList<String> linkGatelist = new ArrayList<>();
+        HashMap<String, String> linkGateMap = new HashMap<>();
 
         // 全行の設定からゲート/リンク定義を分割して各マップに保存しておく
         for (String obj : root.keySet()) {
@@ -66,8 +123,26 @@ public class LoaderGate extends LoaderYaml {
             if (line.length != 3) continue;
             if (line[0].equalsIgnoreCase("gates")) {
                 // ゲート定義読み込み
+                // Gate定義サンプル
+                //  100b:
+                //    world: home01
+                //    x: 1290
+                //    y: 64
+                //    z: 2823
+                //    yaw: 223.48871
+                //    pitch: -7.49999
+                //    text: '&e～100タウン～'
+                //  '100':
+                //    world: world
+                //    x: -70
+                //    y: 60
+                //    z: -5
+                //    yaw: 2.1191406
+                //    pitch: -6.1243014
+                //    text: '&e～エントランス～'
                 String name = line[1];
                 if (!namelist.contains(name)) { namelist.add(name); }
+                String server = null;
                 String world = null;
                 String xstr = null;
                 String ystr = null;
@@ -75,6 +150,7 @@ public class LoaderGate extends LoaderYaml {
                 String yawstr = null;
                 String pitchstr = null;
                 String text = null;
+                if (line[2].equalsIgnoreCase("server")) server = conf.getString("Gates."+name + "."+line[2]);
                 if (line[2].equalsIgnoreCase("world")) world = conf.getString("Gates."+name + "."+line[2]);
                 if (line[2].equalsIgnoreCase("x")) xstr = conf.getString("Gates."+name + "."+line[2]);
                 if (line[2].equalsIgnoreCase("y")) ystr = conf.getString("Gates."+name + "."+line[2]);
@@ -82,6 +158,7 @@ public class LoaderGate extends LoaderYaml {
                 if (line[2].equalsIgnoreCase("yaw")) yawstr = conf.getString("Gates."+name + "."+line[2]);
                 if (line[2].equalsIgnoreCase("pitch")) pitchstr = conf.getString("Gates."+name + "."+line[2]);
                 if (line[2].equalsIgnoreCase("text")) text = conf.getString("Gates."+name + "."+line[2]);
+                if (server != null) { serverlist.put(name, server); }
                 if (world != null) { worldlist.put(name, world); }
                 if (xstr != null) { xlist.put(name, xstr); }
                 if (ystr != null) { ylist.put(name, ystr); }
@@ -91,65 +168,110 @@ public class LoaderGate extends LoaderYaml {
                 if (text != null) { textlist.put(name, text); }
             } else if (line[0].equalsIgnoreCase("links")) {
                 // リンク定義読み込み
+                // リンク定義サンプル
+                //  '100':
+                //    connection: 100b
+                //  100b:
+                //    connection: '100'
                 String linkname = line[1];
-                if (!linknamelist.contains(linkname)) { linknamelist.add(linkname); }
+                if (!linkGatelist.contains(linkname)) { linkGatelist.add(linkname); } // 転移元ゲート名
                 String linknameb = null;
-                if (line[2].equalsIgnoreCase("connection")) linknameb = conf.getString("Links."+linkname + "."+line[2]);
-                if (linknameb != null) { linknamelistb.put(linkname, linknameb); }
+                if (line[2].equalsIgnoreCase("connection")) {
+                    linknameb = conf.getString("Links." + linkname + "."+line[2]); // 転移先ゲート名
+                    linkGateMap.put(linkname, linknameb);
+                }
             }
         }
         // 必要な情報を読み切れていれば登録する（ゲート定義）
-        for (String g: namelist) {
-            if ( worldlist.containsKey(g) &&
-                xlist.containsKey(g) &&
-                ylist.containsKey(g) &&
-                zlist.containsKey(g) &&
-                yawlist.containsKey(g) &&
-                pitchlist.containsKey(g)) {
-                World w = plg.getServer().getWorld(worldlist.get(g));
-                if (w == null) {
-                    log.warning("ゲート定義ワールド未ロードエラー["+worldlist.get(g) +"]");
-                    continue;
+        for (String gateName: namelist) {
+            if (!serverlist.containsKey(gateName)) {
+                // サーバー名が設定されていない場合は設定ファイルのサーバー名を格納する
+                String serverName = defConf.getString("server");
+                serverlist.put(gateName, serverName);
+                // 現在のサーバーのワールドであれば、サーバー設定を更新する
+                if (worldlist.containsKey(gateName)) {
+                    ArrayList<String> localList = new ArrayList<>();
+                    for (World world : plg.getServer().getWorlds()) {
+                        localList.add(world.getName());
+                    }
+                    if (localList.contains(worldlist.get(gateName))) {
+                        list.set("Gates." + gateName + ".server", serverName);
+                        saveCnf();
+                    }
                 }
+            }
+            if (worldlist.containsKey(gateName) &&
+                xlist.containsKey(gateName) &&
+                ylist.containsKey(gateName) &&
+                zlist.containsKey(gateName) &&
+                yawlist.containsKey(gateName) &&
+                pitchlist.containsKey(gateName)) {
+                World world = plg.getServer().getWorld(worldlist.get(gateName));
                 try {
-                Location loc = new Location(
-                        w,
-                        Double.parseDouble(xlist.get(g)),
-                        Double.parseDouble(ylist.get(g)),
-                        Double.parseDouble(zlist.get(g)),
-                        Float.parseFloat(yawlist.get(g)),
-                        Float.parseFloat(pitchlist.get(g)));
-                loc.getChunk().load();
-                locmap.put(g, loc);
-                    log.info("ゲート定義読み込み["+g+"] x:"+xlist.get(g)+" y:"+ylist.get(g)+" z:"+zlist.get(g)+" yaw:"+yawlist.get(g)+" pitch:"+pitchlist.get(g));
+                    if (world == null) {
+                        log.warning("ゲート定義ワールド未ロードエラー["+worldlist.get(gateName) +"]");
+                        unloadWorldGateNameList.add(gateName);
+                        // ワールドが未ロードの場合、ワールド名だけでGate定義を登録する
+                        Gate gate = new Gate(this, serverlist.get(gateName), gateName,
+                            worldlist.get(gateName),
+                            Double.parseDouble(xlist.get(gateName)),
+                            Double.parseDouble(ylist.get(gateName)),
+                            Double.parseDouble(zlist.get(gateName)),
+                            Float.parseFloat(yawlist.get(gateName)),
+                            Float.parseFloat(pitchlist.get(gateName)),
+                            textlist.get(gateName));
+                        gate.unload = true;
+                        // 全ワールド共通リスト二追加
+                        gateDataMap.put(gateName, gate);
+                    } else {
+                        Location loc = new Location(
+                            world,
+                            Double.parseDouble(xlist.get(gateName)),
+                            Double.parseDouble(ylist.get(gateName)),
+                            Double.parseDouble(zlist.get(gateName)),
+                            Float.parseFloat(yawlist.get(gateName)),
+                            Float.parseFloat(pitchlist.get(gateName)));
+                        loc.getChunk().load();
+                        Gate gate = new Gate(this, serverlist.get(gateName), gateName, loc, textlist.get(gateName));
+                        // 全ワールド共通リスト二追加
+                        gateDataMap.put(gateName, gate);
+                        // ワールド別リストに追加
+                        worldGateMap.get(world.getName()).put(gateName, gateDataMap.get(gateName));
+                    }
+
+                    log.info("ゲート定義読み込み["+gateName+"](" + serverlist.get(gateName) + ") x:"+xlist.get(gateName)+" y:"+ylist.get(gateName)+" z:"+zlist.get(gateName)+" yaw:"+yawlist.get(gateName)+" pitch:"+pitchlist.get(gateName));
                 } catch (Exception e) {
-                    log.warning("ゲート定義パースエラー["+g+"] x:"+xlist.get(g)+" y:"+ylist.get(g)+" z:"+zlist.get(g)+" yaw:"+yawlist.get(g)+" pitch:"+pitchlist.get(g));
+                    log.warning("ゲート定義パースエラー["+gateName+"] x:"+xlist.get(gateName)+" y:"+ylist.get(gateName)+" z:"+zlist.get(gateName)+" yaw:"+yawlist.get(gateName)+" pitch:"+pitchlist.get(gateName));
                 }
             } else {
-                if (!worldlist.containsKey(g)) {
+                if (!worldlist.containsKey(gateName)) {
                     log.warning("ゲート定義未定義エラー[world]");
-                } else if (!xlist.containsKey(g)) {
+                } else if (!xlist.containsKey(gateName)) {
                     log.warning("ゲート定義未定義エラー[x]");
-                } else if (!ylist.containsKey(g)) {
+                } else if (!ylist.containsKey(gateName)) {
                     log.warning("ゲート定義未定義エラー[y]");
-                } else if (!zlist.containsKey(g)) {
+                } else if (!zlist.containsKey(gateName)) {
                     log.warning("ゲート定義未定義エラー[z]");
-                } else if (!yawlist.containsKey(g)) {
+                } else if (!yawlist.containsKey(gateName)) {
                     log.warning("ゲート定義未定義エラー[yaw]");
-                } else if (!pitchlist.containsKey(g)) {
+                } else if (!pitchlist.containsKey(gateName)) {
                     log.warning("ゲート定義未定義エラー[pitch]");
                 }                
             }
         }
         // 必要な情報を読み切れていれば登録する（リンク定義）
-        for (String l: linknamelist) {
-            if ( linknamelistb.containsKey(l)) {
-                if (!locmap.containsKey(l)) {
-                    log.warning("ゲートリンク定義のうちゲート["+l+"]が見つかりませんでした");
-                } else if (!locmap.containsKey(linknamelistb.get(l))) {
-                    log.warning("ゲートリンク定義のうちゲート["+linknamelistb.get(l)+"]が見つかりませんでした");
+        for (String linknameA : linkGatelist) {                 // 転移元ゲート名のリストでループ
+            if (linkGateMap.containsKey(linknameA)) {           // 転移先ゲート名とペアにしてmapに登録してある(ペアが見つかっている)
+                if (!gateDataMap.containsKey(linknameA)) {      // 転移元ゲートがゲート一覧にない
+                    log.warning("ゲートリンク定義のうちゲート["+ linknameA +"]が見つかりませんでした");
                 } else {
-                    gatemap.put(l, linknamelistb.get(l));
+                    String linknameB = linkGateMap.get(linknameA);
+                    if (!gateDataMap.containsKey(linknameB)) {  // 転移先ゲートがゲート一覧にない
+                        log.warning("ゲートリンク定義のうちゲート["+linkGateMap.get(linknameA)+"]が見つかりませんでした");
+                    } else {                                    // どちらもゲート一覧にある
+                        Gate gateA = gateDataMap.get(linknameA);
+                        gateA.link = gateDataMap.get(linknameB);
+                    }
                 }
             }
         }
@@ -157,123 +279,117 @@ public class LoaderGate extends LoaderYaml {
     
     /**
      * ゲート検索（名前指定）
-     * @param name ゲート名
+     * @param name_ ゲート名
      * @return 定義存在有無
      */
-    public boolean contains(String name) {
-        return locmap.containsKey(name);
+    public boolean contains(String name_) {
+        return gateDataMap.containsKey(name_);
     }
     
     /**
      * ゲート検索（座標指定）
-     * @param loc 検索座標
+     * @param loc_ 検索座標
      * @return 指定座標にゲートがあるかどうか
      */
-    public boolean contains(Location loc) {
-        for (Map.Entry<String, Location> e: locmap.entrySet()) {
-            Location l = e.getValue();
-            if (!loc.getWorld().getName().equals(l.getWorld().getName())) continue;
-            if (loc.getBlockX() != l.getBlockX()) continue;
-            if (loc.getBlockY() != l.getBlockY()) continue;
-            if (loc.getBlockZ() != l.getBlockZ()) continue;
-            return true;
-        }
-        return false;
+    public boolean contains(Location loc_) {
+        return contains(loc_, 0, 0, 0);
     }
-    
+
     /**
      * ゲート検索（座標およびオフセット指定）
-     * @param loc 検索座標
-     * @param x ずらす検索座標のX座標補正値
-     * @param y ずらす検索座標のY座標補正値
-     * @param z ずらす検索座標のZ座標補正値
+     * @param loc_ 検索座標
+     * @param x_ ずらす検索座標のX座標補正値
+     * @param y_ ずらす検索座標のY座標補正値
+     * @param z_ ずらす検索座標のZ座標補正値
      * @return 指定座標にゲートがあるかどうか
      */
-    public boolean contains(Location loc, int x, int y, int z) {
-        for (Map.Entry<String, Location> e: locmap.entrySet()) {
-            Location l = e.getValue();
-            if (!loc.getWorld().getName().equals(l.getWorld().getName())) continue;
-            if (loc.getBlockX() != l.getBlockX() + x) continue;
-            if (loc.getBlockY() != l.getBlockY() + y) continue;
-            if (loc.getBlockZ() != l.getBlockZ() + z) continue;
-            return true;
+    public boolean contains(Location loc_, int x_, int y_, int z_) {
+        if (loc_.getWorld() == null) return false;
+        String worldName = loc_.getWorld().getName();
+        if (!worldGateMap.containsKey(worldName)) return false;
+        for (Gate e: worldGateMap.get(worldName).values()) {
+            if (e.isLocation(loc_, x_, y_, z_)) return true;
         }
         return false;
     }
-    
+
     /**
-     * ゲート検索（チャンク指定）
-     * @param c 検索チャンク
-     * @return 指定チャンクにゲートがあるかどうか
+     * ゲート検索（名前指定）
+     * @param gateName_ ゲート名
+     * @return ゲート
      */
-    public boolean contains(Chunk c) {
-        int x = c.getX();
-        int z = c.getZ();
-        int xmin = x * 16;
-        int xmax = (x + 1) * 16;
-        int zmin = z * 16;
-        int zmax = (z + 1) * 16;
-        for (Map.Entry<String, Location> e: locmap.entrySet()) {
-            Location l = e.getValue();
-            // 違うワールドは無視
-            if (!c.getWorld().getName().equals(l.getWorld().getName())) continue;
-            int locx = l.getBlockX();
-            int locz = l.getBlockZ();
-            if (locx < xmin) continue;
-            if (locz < zmin) continue;
-            if (locx >= xmax) continue;
-            if (locz >= zmax) continue;
-            return true;
-        }
-        return false;
+    public Gate get(String gateName_) {
+        return gateDataMap.get(gateName_);
     }
-    
+
+    /**
+     * ゲート検索（座標指定）
+     * @param loc_ ロケーション
+     * @return ゲート
+     */
+    public Gate get(Location loc_) {
+        if (!contains(loc_)) return null;
+        if (loc_.getWorld() == null) return null;
+        String worldName = loc_.getWorld().getName();
+        for (Gate e: worldGateMap.get(worldName).values()) {
+            if (e.isLocation(loc_)) return e;
+        }
+        return null;
+    }
+
+    /**
+     * ゲート検索（座標およびオフセット指定）
+     * @param loc_ ロケーション
+     * @param x_ Xオフセット
+     * @param y_ Yオフセット
+     * @param z_ Zオフセット
+     * @return ゲート
+     */
+    public Gate get(Location loc_, int x_, int y_, int z_) {
+        if (!contains(loc_, x_, y_, z_)) return null;
+        if (loc_.getWorld() == null) return null;
+        String worldName = loc_.getWorld().getName();
+        for (Gate e: worldGateMap.get(worldName).values()) {
+            if (e.isLocation(loc_)) return e;
+        }
+        return null;
+    }
+
     /**
      * リンク済みゲート判定
-     * @param name
-     * @return 
+     * @param name リンク名
+     * @return リンク状態
      */
     public boolean isLinked(String name) {
-        return gatemap.containsKey(name);
+        if (!contains(name)) return false;
+        return (get(name).link != null);
     }
-    
-    /**
-     * 転送先ゲート座標取得（座標指定）
-     * @param loc 転送前ゲート座標
-     * @return 転送先ゲート座標
-     */
-    public Location search(Location loc) {
-        return search(loc, 0, 0, 0);
-    }
-    
+
     /**
      * 転送先ゲート座標取得（座標およびオフセット指定）
-     * @param loc 転送前ゲート座標
-     * @param x ずらす転送前ゲート位置のX座標補正値
-     * @param y ずらす転送前ゲート位置のY座標補正値
-     * @param z ずらす転送前ゲート位置のZ座標補正値
+     * @param loc_ 転送前ゲート座標
+     * @param x_ ずらす転送前ゲート位置のX座標補正値
+     * @param y_ ずらす転送前ゲート位置のY座標補正値
+     * @param z_ ずらす転送前ゲート位置のZ座標補正値
      * @return 転送先ゲート座標
      */
-    public Location search(Location loc, int x, int y, int z) {        
-        for (Map.Entry<String, Location> e: locmap.entrySet()) {
-            Location l = e.getValue();
-            if (!loc.getWorld().getName().equals(l.getWorld().getName())) continue;
-            if (loc.getBlockX() != l.getBlockX() + x) continue;
-            if (loc.getBlockY() != l.getBlockY() + y) continue;
-            if (loc.getBlockZ() != l.getBlockZ() + z) continue;
-            // ゲートがヒットしたので相手のゲートを探す
-            if (!gatemap.containsKey(e.getKey())) continue;
-            // あったので相手のゲート名を取得
-            String name = gatemap.get(e.getKey());
-            // 相手のゲートの座標データがあるか確認する
-            if (!locmap.containsKey(name)){continue;}
-            
-            // あったら相手のゲート座標を抽出して、少し補正して返す
-            Location buf = locmap.get(name);
-            return new Location(buf.getWorld(), buf.getBlockX()+0.5-x, buf.getBlockY()-y, buf.getBlockZ()+0.5-z, buf.getYaw(), buf.getPitch());
-        }
-        
-        return null;
+    public Gate search(Location loc_, int x_, int y_, int z_) {
+        Gate gate = get(loc_, x_, y_, z_);
+        if (gate == null) return null;
+        if (gate.link == null) return null;
+        return gate.link;
+    }
+
+    /**
+     * 転送先ゲート座標取得（座標およびオフセット指定）
+     * @param loc_ 転送前ゲート座標
+     * @return 転送先ゲート座標
+     */
+    public Gate search(Location loc_) {
+        Gate gate = get(loc_);
+        if (gate == null) return null;
+        if (gate.link == null) return null;
+        return gate.link;
     }
 
     /**
@@ -283,216 +399,228 @@ public class LoaderGate extends LoaderYaml {
      * @param link_check 接続先が存在するゲートのみを取得するか
      * @return 付近のゲート及び接続されたゲート
      */
-    public String nearGateSearch(Location loc, boolean link_check) {
-        String nearGateName = "null";
-        double nearDistance = 999999999;
+    public Gate nearGateSearch(Location loc, boolean link_check) {
+        if (loc.getWorld() == null) return null;
+        //対象のロケーションにワールドにゲートが存在していなければnullを返す
+        String world_name = loc.getWorld().getName();
+        if (!worldGateMap.containsKey(world_name)) return null;
+
+        Gate nearGate = null;
+        double nearDistance = Double.MAX_VALUE;
         boolean found = false;
-        for (Map.Entry<String, Location> e : locmap.entrySet()) {
-            String gate_name = e.getKey();
-            Location get_loc = e.getValue();
-            if (!loc.getWorld().getName().equals(get_loc.getWorld().getName())) continue;
-            if (loc.distance(get_loc) < nearDistance) {
-                String name = gatemap.get(gate_name);
+        for (Gate gate : worldGateMap.get(world_name).values()) {
+            if (loc.distance(gate.loc) < nearDistance) {
                 // 相手のゲートの座標データがあるか確認する
-                if (link_check) {
-                    if (!locmap.containsKey(name)) {
-                        continue;
-                    }
-                }
+                if (link_check && gate.link == null) continue;
                 found = true;
-                nearDistance = loc.distance(get_loc);
-                nearGateName = gate_name;
+                nearDistance = loc.distance(gate.loc);
+                nearGate = gate;
             }
         }
         if (found) {
-            return nearGateName;
-        }
-        return "null";
-    }
-
-    /**
-     * 該当ゲートの接続先ゲート名を取得する
-     *
-     * @param gate_name ゲート名
-     * @return 接続先ゲート名
-     */
-    public String getLinkGateName(String gate_name) {
-        String link_gate_name = "null";
-        if (locmap.containsKey(gate_name)) {
-            link_gate_name = gatemap.get(gate_name);
-            if (locmap.containsKey(link_gate_name)) {
-                return link_gate_name;
-            }
-        }
-        return "null";
-    }
-
-    /**
-     * 該当ゲートのtextを取得する
-     *
-     * @param gate_name ゲート名
-     * @return ゲートテキスト
-     */
-    public String getGateText(String gate_name) {
-        if (textlist.containsKey(gate_name)) {
-            return textlist.get(gate_name);
-        }
-        return "null";
-    }
-    /**
-     * 該当ゲートのLocationを取得する
-     * @param gate_name ゲート名
-     * @return ゲートテキスト
-     */
-    public Location getGateLocation(String gate_name) {
-        if (locmap.containsKey(gate_name)) {
-            return locmap.get(gate_name);
+            return nearGate;
         }
         return null;
     }
 
     /**
      * ゲート追加処理
-     * @param name ゲート名
-     * @param loc ゲート座標
-     * @return ゲート追加成否
+     * @param name_ ゲート名
+     * @param loc_ ゲート座標
+     * @throws InvalidStateException 条件不備
      */
-    public boolean addGate(String name, Location loc) {
-        Location l = new Location(loc.getWorld(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), loc.getYaw(), loc.getPitch());
-        locmap.put(name, l);
-        reloadCnf();
-        FileConfiguration list = getCnf();
-        list.options().copyDefaults(true);
-        list.set("Gates."+name+".world", l.getWorld().getName());
-        list.set("Gates."+name+".x", l.getBlockX());
-        list.set("Gates."+name+".y", l.getBlockY());
-        list.set("Gates."+name+".z", l.getBlockZ());
-        list.set("Gates."+name+".yaw", l.getYaw());
-        list.set("Gates."+name+".pitch", l.getPitch());
-        saveCnf();
-        return true;
+    public void addGate(String name_, Location loc_) throws InvalidStateException {
+        addGate(name_, loc_, null);
     }
 
     /**
-     * ゲート追加処理（説明文付き）
-     * @param name ゲート名
-     * @param loc ゲート座標
-     * @param text ゲート説明文
-     * @return ゲート追加成否
+     * ゲート追加処理
+     * @param name_ ゲート名
+     * @param loc_ ゲート座標
+     * @param text_ ゲート説明文
+     * @throws InvalidStateException 条件不備
      */
-    public boolean addGate(String name, Location loc, String text) {
-        if (!addGate(name, loc)) return false;
-        textlist.put(name, text);
+    public void addGate(String name_, Location loc_, String text_) throws InvalidStateException {
+        if (contains(name_)) throw new InvalidStateException("既にゲートが存在します"); // 既にゲートが存在する
+        if (loc_.getWorld() == null) throw new InvalidStateException("ワールドが存在しません"); // ワールドが存在しない
+        Gate gate = new Gate(this, defConf.getString("server"), name_, loc_, text_);
+        gateDataMap.put(name_, gate);
+        if (worldGateMap.containsKey(loc_.getWorld().getName())) {
+            worldGateMap.get(loc_.getWorld().getName()).put(name_, gate);
+        } else {
+            worldGateMap.put(loc_.getWorld().getName(), new HashMap<>());
+            worldGateMap.get(loc_.getWorld().getName()).put(name_, gate);
+        }
+        if (!worldlist.containsValue(loc_.getWorld().getName())) {
+            worldlist.put(name_, loc_.getWorld().getName());
+        }
+
         reloadCnf();
         FileConfiguration list = getCnf();
         list.options().copyDefaults(true);
-        list.set("Gates."+name+".text", text);
+        list.set("Gates."+name_+".server", defConf.getString("server"));
+        list.set("Gates."+name_+".world", gate.world.getName());
+        list.set("Gates."+name_+".x", gate.getNormalizedLocation().getBlockX());
+        list.set("Gates."+name_+".y", gate.getNormalizedLocation().getBlockY());
+        list.set("Gates."+name_+".z", gate.getNormalizedLocation().getBlockZ());
+        list.set("Gates."+name_+".yaw", gate.yaw);
+        list.set("Gates."+name_+".pitch", gate.pitch);
+        list.set("Gates."+name_+".text", text_);
         saveCnf();
-        return true;
     }
-    
+
+    /**
+     * ゲート更新処理
+     * @param name_ ゲート名
+     * @param loc_ ゲート座標
+     * @throws InvalidStateException 条件不備
+     */
+    public void updateGate(String name_, Location loc_) throws InvalidStateException {
+        if (!contains(name_)) throw new InvalidStateException("ゲートが存在しません"); // ゲートが存在しない
+        Gate gate = get(name_);
+        updateGate(name_, loc_, gate.text);
+    }
+
+    /**
+     * ゲート更新処理
+     * @param name_ ゲート名
+     * @param loc_ ゲート座標
+     * @param text_ ゲート説明文
+     * @throws InvalidStateException 条件不備
+     */
+    public void updateGate(String name_, Location loc_, String text_) throws InvalidStateException {
+        if (!contains(name_)) throw new InvalidStateException("ゲートが存在しません"); // ゲートが存在しない
+        if (loc_.getWorld() == null) throw new InvalidStateException("ワールドが存在しません"); // ワールドが存在しない
+
+        Gate linkGate = get(name_).link;
+        Gate gate = new Gate(this, defConf.getString("server"), name_, loc_, text_);
+        gate.link = linkGate;
+        if (linkGate != null) {
+            linkGate.link = gate;
+        }
+
+        gateDataMap.replace(name_, gate);
+        if (worldGateMap.containsKey(loc_.getWorld().getName())) {
+            worldGateMap.get(loc_.getWorld().getName()).replace(name_, gate);
+        }
+        unloadWorldGateNameList.remove(name_);
+        if (!worldlist.containsValue(loc_.getWorld().getName())) {
+            worldlist.put(name_, loc_.getWorld().getName());
+        }
+
+        reloadCnf();
+        FileConfiguration list = getCnf();
+        list.options().copyDefaults(true);
+        list.set("Gates."+name_+".server", defConf.getString("server"));
+        list.set("Gates."+name_+".world", gate.world.getName());
+        list.set("Gates."+name_+".x", gate.getNormalizedLocation().getBlockX());
+        list.set("Gates."+name_+".y", gate.getNormalizedLocation().getBlockY());
+        list.set("Gates."+name_+".z", gate.getNormalizedLocation().getBlockZ());
+        list.set("Gates."+name_+".yaw", gate.yaw);
+        list.set("Gates."+name_+".pitch", gate.pitch);
+        list.set("Gates."+name_+".text", text_);
+        saveCnf();
+    }
+
     /**
      * ゲート削除処理
-     * @param name ゲート名
-     * @return ゲート削除成否
+     * @param name_ ゲート名
+     * @throws InvalidStateException 条件不備
      */
-    public boolean deleteGate(String name) {
-        if (!locmap.containsKey(name)) { return false; }
+    public void deleteGate(String name_) throws InvalidStateException {
+        if (!gateDataMap.containsKey(name_)) throw new InvalidStateException("指定ゲートがありません");
         // 指定ゲートを削除する
-        locmap.remove(name);
+        Gate gate = gateDataMap.get(name_);
+        if (gate.world != null) {
+            worldGateMap.get(gate.world.getName()).remove(name_);
+        }
+        gateDataMap.remove(name_);
+        unloadWorldGateNameList.remove(name_);
+
         reloadCnf();
         FileConfiguration list = getCnf();
         list.options().copyDefaults(true);
-        list.set("Gates."+name, null);
+        list.set("Gates." + name_, null);
         // 指定ゲートのリンクを削除する
         // まず該当ゲートがリンク済みか調べる
-        if (gatemap.containsKey(name)) {
-            // リンクしている状態であれば、接続先ゲートの定義を調べる
-            if (gatemap.containsKey(gatemap.get(name))) {
-                // 接続先ゲートがあれば、その定義を削除する
-                list.set("Links."+gatemap.get(gatemap.get(name)), null);
-                gatemap.remove(gatemap.get(name));
-            }
-            // 削除対象ゲートのリンク定義を削除する
-            list.set("Links."+gatemap.get(name), null);
-            gatemap.remove("name");
+        if (gate.link != null) {
+            // リンク済みの場合は自分のゲードに加えて対抗リンクも削除する
+            Gate other = gate.link;
+            other.link = null;
+            list.set("Links."+ other.name, null);
+            list.set("Links."+ name_, null);
         }
         saveCnf();
-        return true;
     }
     
     /**
      * ゲート接続設定処理
      * ゲート名を2つ指定すると、そのゲート間で双方向の接続を行う
-     * @param name1 接続元ゲート名
-     * @param name2 接続席ゲート名
-     * @return 接続結果
+     * @param name1_ 接続元ゲート名
+     * @param name2_ 接続席ゲート名
+     * @throws InvalidStateException 条件不備
      */
-    public boolean linkAddGate(String name1, String name2) {
-        if (!locmap.containsKey(name1)) { return false; }
-        if (!locmap.containsKey(name2)) { return false; }
-        if (gatemap.containsKey(name1)) { return false; }
-        if (gatemap.containsKey(name2)) { return false; }
-        gatemap.put(name1, name2);
-        gatemap.put(name2, name1);
+    public void linkAddGate(String name1_, String name2_) throws InvalidStateException {
+        if (!contains(name1_)) throw new InvalidStateException("1つ目のゲートが見つかりませんでした");
+        if (!contains(name2_)) throw new InvalidStateException("2つ目のゲートが見つかりませんでした");
+        Gate gate1 = get(name1_);
+        Gate gate2 = get(name2_);
+        if (gate1.link != null) throw new InvalidStateException("1つ目のゲートは既にリンクされています");
+        if (gate2.link != null) throw new InvalidStateException("2つ目のゲートは既にリンクされています");
+        gate1.link = gate2;
+        gate2.link = gate1;
+
         reloadCnf();
         FileConfiguration list = getCnf();
         list.options().copyDefaults(true);
-        list.set("Links."+name1+".connection", name2);
-        list.set("Links."+name2+".connection", name1);
+        list.set("Links."+name1_+".connection", name2_);
+        list.set("Links."+name2_+".connection", name1_);
         saveCnf();
-        return true;
     }
 
     /**
      * ゲート接続解除処理
      * ゲート名を指定すると、そのゲートと接続先のゲート間のリンク定義を削除する
-     * @param name ゲート名指定
+     * @param name_ ゲート名指定
      * @return 解除した接続先のゲート名を返す
      */
-    public String linkDelGate(String name) {
-        if (!locmap.containsKey(name)) { return null; }
-        if (!gatemap.containsKey(name)) { return null; }
-        // 指定ゲートの接続ゲートを取得してリンク解除する
-        String name2 = gatemap.get(name);
-        // 指定ゲートの接続ゲートがある場合
-        if (!gatemap.containsKey(name2)) {
-            // 接続ゲート側のリンク定義が存在しない場合は、指定ゲートのリンク定義のみ削除して終わる
-            gatemap.remove(name);
-            reloadCnf();
-            FileConfiguration list = getCnf();
-            list.options().copyDefaults(true);
-            list.set("Links."+name, null);
+    public String linkDelGate(String name_) throws InvalidStateException {
+        reloadCnf();
+        FileConfiguration list = getCnf();
+        list.options().copyDefaults(true);
+        boolean isDelete;
+        if (list.contains("Links." + name_)) {
+            // コンフィグファイル上にリンク定義がある場合は削除する
+            list.set("Links." + name_, null);
+            isDelete = true;
             saveCnf();
         } else {
-            // 接続ゲート側のリンク定義が存在する場合は、両方のゲートのリンク定義を削除して終わる
-            gatemap.remove(name);
-            gatemap.remove(name2);
-            reloadCnf();
-            FileConfiguration list = getCnf();
-            list.options().copyDefaults(true);
-            list.set("Links."+name, null);
-            list.set("Links."+name2, null);
-            saveCnf();
-        }        
-        return name2;
-    }
-    
-    /**
-     * ゲート説明文取得処理
-     * @param loc ゲート座標指定
-     * @return ゲート説明文返却
-     */
-    public String getText(Location loc) {
-        for (Map.Entry<String, Location> e: locmap.entrySet()) {
-            Location l = e.getValue();
-            if (!loc.getWorld().getName().equals(l.getWorld().getName())) continue;
-            if (loc.getBlockX() != l.getBlockX()) continue;
-            if (loc.getBlockY() != l.getBlockY()) continue;
-            if (loc.getBlockZ() != l.getBlockZ()) continue;
-            if (!textlist.containsKey(e.getKey())) return null;
-            return textlist.get(e.getKey());
+            isDelete = false;
         }
-        return null;
+
+        if (!contains(name_)) {
+            if (isDelete) {
+                throw new InvalidStateException("1つ目のゲートが見つかりませんでしたが、リンク定義は削除されました");
+            } else {
+                throw new InvalidStateException("1つ目のゲートが見つかりませんでした");
+            }
+        }
+        Gate gate1 = get(name_);
+        if (gate1.link == null) {
+            if (isDelete) {
+                throw new InvalidStateException("指定したゲートはリンクされていませんが、リンク定義は削除されました");
+            } else {
+                throw new InvalidStateException("指定したゲートはリンクされていません");
+            }
+        }
+
+        Gate gate2 = gate1.link;
+        gate1.link = null;
+        gate2.link = null;
+        list.set("Links." + gate2.name, null);
+        saveCnf();
+
+        return gate2.name;
     }
+
 }

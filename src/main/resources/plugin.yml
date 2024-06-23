@@ -4,14 +4,30 @@ version: ${project.version}
 api-version: 1.18
 depend: [EcoFramework]
 commands:
+  ecogate:
+    description: ecogate command.
+    usage: /<command> function...
+    permission: ecogate
+  ecogate test:
+    description: Test command.
+    usage: /<command>
+    permission: ecogate.test
+  ecogate reload:
+    description: Reload ecogate configuration file command.
+    usage: /<command>
+    permission: ecogate.reload
   gate:
     description: gate command.
     usage: /<command> function...
     permission: ecogate.gate
   gate add:
     description: gate additional command.
-    usage: /<command> gate1
+    usage: /<command> gate1 [message]
     permission: ecogate.gate.add
+  gate update:
+    description: gate update command.
+    usage: /<command> gate1 [message]
+    permission: ecogate.gate.update
   gate del:
     description: gate deletional command.
     usage: /<command> gate1
@@ -28,6 +44,14 @@ commands:
     description: gate near command.
     usage: /<command>
     permission: ecogate.gate.near
+  gate list:
+    description: gate list command.
+    usage: /<command> [all]
+    permission: ecogate.gate.list
+  gate info:
+    description: gate info command.
+    usage: /<command> [gatename]
+    permission: ecogate.gate.info
   world:
     description: world command.
     usage: /<command> function...
@@ -68,11 +92,3 @@ commands:
     description: end world additional command.
     usage: /<command> worldname
     permission: ecogate.world.add.end
-  ecogate:
-    description: ecogate command.
-    usage: /<command> function...
-    permission: ecogate
-  ecogate reload:
-    description: Reload ecogate configuration file command.
-    usage: /<command>
-    permission: ecogate.reload
