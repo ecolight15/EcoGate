@@ -8,7 +8,6 @@ import jp.minecraftuser.ecogate.config.EcoGateConfig;
 import jp.minecraftuser.ecogate.config.LoaderWorld;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
 
 /**
  * ワールド一覧表示コマンドクラス

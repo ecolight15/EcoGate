@@ -13,8 +13,7 @@ import jp.minecraftuser.ecogate.config.LoaderGate;
 import jp.minecraftuser.ecogate.config.LoaderWorld;
 import jp.minecraftuser.ecogate.struct.Gate;
 import jp.minecraftuser.ecogate.timer.BlockSetTimer;
-import jp.minecraftuser.ecogate.timer.VehicleTimer;
-import org.bukkit.Chunk;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -30,7 +29,6 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.util.Vector;
-import org.bukkit.event.world.ChunkUnloadEvent;
 
 /**
  * プレイヤーイベント処理リスナークラス
@@ -110,8 +108,8 @@ public class PlayerListener extends ListenerFrame {
                                 return;
                             }
                             usedmap.remove(player);
-                            playerList.add(player);
                         }
+                        playerList.add(player);
                     }
                 }
 

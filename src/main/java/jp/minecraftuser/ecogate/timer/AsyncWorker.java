@@ -1,8 +1,6 @@
 
 package jp.minecraftuser.ecogate.timer;
 
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -10,7 +8,6 @@ import jp.minecraftuser.ecogate.timer.task.AsyncTaskBase;
 import jp.minecraftuser.ecogate.timer.task.AsyncTaskCmdTest;
 import jp.minecraftuser.ecoframework.async.*;
 import jp.minecraftuser.ecoframework.PluginFrame;
-import jp.minecraftuser.ecoframework.Utl;
 
 /**
  * 非同期プレイヤーデータ保存クラス
