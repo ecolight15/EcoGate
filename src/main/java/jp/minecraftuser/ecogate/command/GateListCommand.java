@@ -8,7 +8,6 @@ import jp.minecraftuser.ecogate.config.EcoGateConfig;
 import jp.minecraftuser.ecogate.config.LoaderGate;
 import jp.minecraftuser.ecogate.struct.Gate;
 import org.bukkit.ChatColor;
-import org.bukkit.Color;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
