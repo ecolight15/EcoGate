@@ -136,10 +136,15 @@ public class LoaderWorld extends LoaderYaml {
         }
         Utl.sendPluginMessage(plg, null, "新規ワールドデータを読み込み中...");
         World world = wc.createWorld();
-        worldMap.add(world);
-        log.info("WorldLoading:"+world.getName()+":type["+wc.type().getName()+"]:seed["+wc.seed()+"]:env["+wc.environment().name()+"]");
-        Utl.sendPluginMessage(plg, null, "ワールド[{0}]を読み込みました", world.getName());
-        
+        if (world != null) {
+            worldMap.add(world);
+            log.info("WorldLoading:"+world.getName()+":type["+wc.type().getName()+"]:seed["+wc.seed()+"]:env["+wc.environment().name()+"]");
+            Utl.sendPluginMessage(plg, null, "ワールド[{0}]を読み込みました", world.getName());
+        } else {
+            log.warning("World:"+name+"(ワールド読み込み失敗)");
+            Utl.sendPluginMessage(plg, null, "ワールド[{0}]の読み込みに失敗しました", name);
+        }
+
         reloadCnf();
         FileConfiguration list = getCnf();
         list.options().copyDefaults(true);
