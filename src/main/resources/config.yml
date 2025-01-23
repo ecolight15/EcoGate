@@ -1,1 +1,3 @@
 server: 'server_name'
+gate:
+  deactivationRadius: 2

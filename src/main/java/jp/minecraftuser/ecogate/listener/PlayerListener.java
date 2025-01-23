@@ -69,9 +69,9 @@ public class PlayerListener extends ListenerFrame {
         if (usedmap.containsKey(player)) {
             Location destGateLoc = usedmap.get(player);
             Location playerLocation = player.getLocation();
-            if ((destGateLoc.getBlockX() == playerLocation.getBlockX()) &&
-                //(l.getBlockY() == yy) &&
-                (destGateLoc.getBlockZ() == playerLocation.getBlockZ())) {
+            // 一定距離離れるまではreturnして転送しない
+            int radius = conf.getInt("gate.deactivationRadius");
+            if (Math.abs(destGateLoc.getBlockX() - playerLocation.getBlockX()) < radius && Math.abs(destGateLoc.getBlockZ() - playerLocation.getBlockZ()) < radius) {
                 return;
             }
             usedmap.remove(player);
@@ -104,7 +104,8 @@ public class PlayerListener extends ListenerFrame {
                             Location destGateLoc = usedmap.get(player);
                             Location vehicleLocation = vehicleEntity.getLocation();
                             //2ブロック離れるまではreturnする。
-                            if (Math.abs(destGateLoc.getBlockX() - vehicleLocation.getBlockX()) < 2 && Math.abs(destGateLoc.getBlockZ() - vehicleLocation.getBlockZ()) < 2) {
+                            int radius = conf.getInt("gate.deactivationRadius");
+                            if (Math.abs(destGateLoc.getBlockX() - vehicleLocation.getBlockX()) < radius && Math.abs(destGateLoc.getBlockZ() - vehicleLocation.getBlockZ()) < radius) {
                                 return;
                             }
                             usedmap.remove(player);
@@ -175,7 +176,6 @@ public class PlayerListener extends ListenerFrame {
         //エンドゲートウェイで構成されたゲートを通過する際の
         //エンドゲートウェイ本来のテレポートイベントをキャンセルする
         Location location_from = event.getFrom();
-        Location location_to = event.getTo();
 
         if (event.getCause() != TeleportCause .END_GATEWAY) return;
 

@@ -61,10 +61,10 @@ public class GateLinkCommand extends CommandFrame {
         // リンクを設定する
         try {
             gates.linkAddGate(args[0], args[1]);
-            Utl.sendPluginMessage(plg, sender, "指定されたゲート[{0}]と[{1}]を接続しました", args[0], args[1]);
+            Utl.sendPluginMessage(plg, sender, "指定されたゲート[{0}]を[{1}]へ接続しました", args[0], args[1]);
         } catch (Exception e) {
             Utl.sendPluginMessage(plg, sender, e.getLocalizedMessage());
-            Utl.sendPluginMessage(plg, sender, "指定されたゲート[{0}]と[{1}]の接続に失敗しました", args[0], args[1]);
+            Utl.sendPluginMessage(plg, sender, "指定されたゲート[{0}]の[{1}]への接続に失敗しました", args[0], args[1]);
         }
         return true;
     }

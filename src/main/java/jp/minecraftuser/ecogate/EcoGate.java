@@ -33,6 +33,7 @@ public class EcoGate extends PluginFrame {
     public void initializeConfig() {
         EcoGateConfig conf = new EcoGateConfig(this);
         conf.registerString("server");
+        conf.registerInt("gate.deactivationRadius");
         registerPluginConfig(conf);
     }
 

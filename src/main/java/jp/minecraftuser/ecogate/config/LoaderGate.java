@@ -556,24 +556,21 @@ public class LoaderGate extends LoaderYaml {
      * ゲート接続設定処理
      * ゲート名を2つ指定すると、そのゲート間で双方向の接続を行う
      * @param name1_ 接続元ゲート名
-     * @param name2_ 接続席ゲート名
+     * @param name2_ 接続先ゲート名
      * @throws InvalidStateException 条件不備
      */
     public void linkAddGate(String name1_, String name2_) throws InvalidStateException {
         if (!contains(name1_)) throw new InvalidStateException("1つ目のゲートが見つかりませんでした");
         if (!contains(name2_)) throw new InvalidStateException("2つ目のゲートが見つかりませんでした");
-        Gate gate1 = get(name1_);
-        Gate gate2 = get(name2_);
-        if (gate1.link != null) throw new InvalidStateException("1つ目のゲートは既にリンクされています");
-        if (gate2.link != null) throw new InvalidStateException("2つ目のゲートは既にリンクされています");
-        gate1.link = gate2;
-        gate2.link = gate1;
+        Gate gate = get(name1_);
+
+        // A to B のゲート接続のみする
+        gate.link = get(name2_);
 
         reloadCnf();
         FileConfiguration list = getCnf();
         list.options().copyDefaults(true);
         list.set("Links."+name1_+".connection", name2_);
-        list.set("Links."+name2_+".connection", name1_);
         saveCnf();
     }
 
@@ -615,9 +612,6 @@ public class LoaderGate extends LoaderYaml {
 
         Gate gate2 = gate1.link;
         gate1.link = null;
-        gate2.link = null;
-        list.set("Links." + gate2.name, null);
-        saveCnf();
 
         return gate2.name;
     }

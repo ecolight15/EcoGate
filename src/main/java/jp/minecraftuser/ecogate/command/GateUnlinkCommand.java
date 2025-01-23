@@ -51,11 +51,11 @@ public class GateUnlinkCommand extends CommandFrame {
         // パラメータチェック:1つのみ
         if (!checkRange(sender, args, 1, 1)) return true;
 
-        // 指定ゲートとその対になるゲートのリンク定義をそれぞれ削除する
+        // 指定ゲートのリンク定義をそれぞれ削除する
         LoaderGate gates = ecgConf.getGates();
         try {
             String gate = gates.linkDelGate(args[0]);
-            Utl.sendPluginMessage(plg, sender, "指定されたゲート[{0}]と[{1}]の接続を解除しました", args[0], gate);
+            Utl.sendPluginMessage(plg, sender, "指定されたゲート[{0}]の[{1}]との接続を解除しました", args[0], gate);
         } catch (Exception e) {
             Utl.sendPluginMessage(plg, sender, e.getLocalizedMessage());
             Utl.sendPluginMessage(plg, sender, "指定されたゲート[{0}]の接続解除に失敗しました", args[0]);
