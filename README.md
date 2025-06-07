@@ -26,8 +26,8 @@
 
 ## 必要要件
 
-- **Minecraft サーバー**: Spigot/PaperMC 1.18以上
-- **Java**: Java 8以上
+- **Minecraft サーバー**: Spigot/PaperMC 1.20.4以上
+- **Java**: Java 17以上
 - **依存プラグイン**: EcoFramework 0.19
 
 ## インストール
@@ -40,14 +40,14 @@
 
 ### EcoGate 基本コマンド
 - `/ecogate` - プラグインのメインコマンド
-- `/ecogate test` - テストコマンド
+- `/ecogate test` - テストコマンド（デバッグ用）
 - `/ecogate reload` - 設定ファイルのリロード
 
 ### ゲート管理コマンド
 - `/gate add <ゲート名> [メッセージ]` - 現在の位置にゲートを追加
 - `/gate update <ゲート名> [メッセージ]` - ゲートの情報を更新
 - `/gate del <ゲート名>` - ゲートを削除
-- `/gate link <ゲート1> <ゲート2>` - 2つのゲートをリンク
+- `/gate link <ゲート1> <ゲート2>` - 2つのゲートをリンク（片方向の接続）
 - `/gate unlink <ゲート名>` - ゲートのリンクを解除
 - `/gate near` - 近くのゲートを検索
 - `/gate list [all]` - ゲート一覧を表示
@@ -99,7 +99,7 @@
 ```yaml
 server: 'server_name'  # サーバー名
 gate:
-  deactivationRadius: 2  # ゲート無効化半径
+  deactivationRadius: 2  # ゲート転送後に設定値を超える距離離れないとゲートが動作しない誤動作防止
 ```
 
 ### gate.yml
@@ -125,6 +125,7 @@ gate:
 3. **2つのゲートをリンクする**
    ```
    /gate link 駅 商店街
+   /gate link 商店街 駅
    ```
 
 4. **プレイヤーがゲートに踏み込むと自動的にテレポート**
@@ -142,10 +143,6 @@ gate:
 ## 作者
 
 - **ecolight** - プラグイン開発者
-
-## バージョン
-
-現在のバージョン: 0.12
 
 ## サポート
 
